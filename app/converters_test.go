@@ -30,7 +30,6 @@ func TestFormatArray(t *testing.T) {
 }
 
 func TestParseArray(t *testing.T) {
-	t.SkipNow()
 	actual := []byte("*2\r\n$4\r\necho\r\n$3\r\nhey\r\n")
 	expected := []string{"echo", "hey"}
 
@@ -38,7 +37,6 @@ func TestParseArray(t *testing.T) {
 }
 
 func TestParseString(t *testing.T) {
-	t.SkipNow()
 	actual := []byte("$4\r\necho\r\n")
 	expected := "echo"
 
