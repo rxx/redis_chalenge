@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"strings"
 )
 
@@ -22,39 +23,38 @@ func HandleClient(conn net.Conn) {
 }
 
 func handleRequest(data []byte) RValue {
-	rValue := NewRValue(data[0])
-	_, err := rValue.Parse()
+	request := NewRValue(data[0])
+	_, err := request.Parse(data)
 	if err != nil {
 		fmt.Println(err.Error())
-		return
+		return nil
 	}
 
 	var response RValue
 
 	// TODO create interface Command.Execute() and create different commsnd types to handle own logic
-	switch rValue.Value.(type) {
-	case ArrayValue{}:
-		response = executeCommand(strings.ToLower(rValue.Value[0].Value))
+	switch reflect.TypeOf(request).Name() {
+	case "ArrayValue":
+		response = executeCommand(request)
 	default:
-		response = make(ErrorValue{Value: "ERR: Command Expected"})
+		response = &ErrorValue{value: "ERR: Commands Array Expected"}
 	}
 
-	fmt.Println("We are about to send", response.Value)
 	return response
 }
 
-func executeCommand(cmd string) RValue {
-	var result RValue
+func executeCommand(req RValue) RValue {
+	commands := req.Value().([]string)
+	cmd := strings.ToLower(commands[0])
 
 	switch cmd {
 	case "ping":
-		make(SimpleStringValue{Value: "PONG"})
+		return &SimpleStringValue{value: "PONG"}
 	case "echo":
-		message := rValue[1].Value
-		make(StringValue{Value: message})
+		return &StringValue{value: commands[1]}
+	default:
+		return &ErrorValue{value: fmt.Sprintf("Invalid command %s", cmd)}
 	}
-
-	return result
 }
 
 func readData(conn net.Conn) ([]byte, error) {

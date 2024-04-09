@@ -16,29 +16,42 @@ const (
 )
 
 type ParseError struct {
-	Expr        string
-	ParsedIndex int
-	Msg         string
+	data        []byte
+	parsedIndex int
+	err         error
 }
 
-func (e ParseError) Error() string {
-	errorStr := e.Expr[0:e.ParsedIndex] + "[error here]" + e.Expr[e.ParsedIndex:]
-	return fmt.Sprintf("ParseError: %s - expr: %q", e.Msg, errorStr)
+func (v ParseError) Error() string {
+	var errorStr strings.Builder
+	errorStr.Write(v.data[0:v.parsedIndex])
+	errorStr.WriteString("[error here]")
+	errorStr.Write(v.data[v.parsedIndex:])
+
+	return fmt.Sprintf("ParseError:\nexpr: %q\nerror: %v", errorStr.String(), v.err)
+}
+
+func (e ParseError) Unwrap() error {
+	return e.err
 }
 
 type RValue interface {
+	Value() interface{}
 	String() string
 	Bytes() []byte
 	Parse(data []byte) (parsedIndex int, err error)
 }
 
 type SimpleStringValue struct {
-	Value string
+	value string
 }
 
 // Example: "+PONG\r\n"
 func (v SimpleStringValue) String() string {
-	return fmt.Sprintf("%c%s%s", RSimpleString, v.Value, CRLF)
+	return fmt.Sprintf("%c%q%q", RSimpleString, v.value, CRLF)
+}
+
+func (v SimpleStringValue) Value() interface{} {
+	return v.value
 }
 
 func (v SimpleStringValue) Bytes() []byte {
@@ -46,31 +59,39 @@ func (v SimpleStringValue) Bytes() []byte {
 }
 
 func (v *SimpleStringValue) Parse(data []byte) (parsedIndex int, err error) {
+	wrapError := func(err error) ParseError {
+		return ParseError{data: data, parsedIndex: parsedIndex, err: err}
+	}
+
 	if data[0] != byte(RSimpleString) {
-		err = fmt.Errorf("Wrong data type. Missing \"%c\" to parse simple string", RSimpleString)
-		return 0, err
+		err = wrapError(fmt.Errorf("SimpleStringValue.Parse: Missing \"%c\"", RSimpleString))
+		return
 	}
 
 	str := string(data)
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = fmt.Errorf("Wrong data type. Missing \"%s\" to parse simple string", CRLF)
-		return 0, err
+		err = wrapError(fmt.Errorf("SimpleStringValue.Parse: Missing \"%q\"", CRLF))
+		return
 	}
 
-	v.Value = str[1:parsedIndex]
+	v.value = str[1:parsedIndex]
 
 	return
 }
 
 type StringValue struct {
-	Value string
+	value string
 }
 
 // Example: "$4\r\nPONG\r\n"
 func (v StringValue) String() string {
-	return fmt.Sprintf("%c%d%s%s%s", RString, len(v.Value), CRLF, v.Value, CRLF)
+	return fmt.Sprintf("%c%d%q%q%q", RString, len(v.value), CRLF, v.Value, CRLF)
+}
+
+func (v StringValue) Value() interface{} {
+	return v.value
 }
 
 func (v StringValue) Bytes() []byte {
@@ -78,43 +99,54 @@ func (v StringValue) Bytes() []byte {
 }
 
 func (v *StringValue) Parse(data []byte) (parsedIndex int, err error) {
+	wrapError := func(err error) ParseError {
+		return ParseError{data: data, parsedIndex: parsedIndex, err: err}
+	}
+
 	if data[0] != byte(RString) {
-		err = fmt.Errorf("Wrong data type. Missing \"%c\" to parse string", RString)
-		return 0, err
+		err = wrapError(fmt.Errorf("StringValue.Parse: Missing \"%c\"", RString))
+		return
 	}
 
 	str := string(data)
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = fmt.Errorf("Wrong data type. Missing \"%s\" to parse string length", CRLF)
-		return 0, err
+		err = wrapError(fmt.Errorf("StringValue.Parse: Missing \"%q\"", CRLF))
+		return
 	}
 
 	length, err := strconv.Atoi(str[1:parsedIndex])
 	if err != nil {
-		err = fmt.Errorf("Error on reading String length", err.Error())
-		return 0, err
+		err = wrapError(fmt.Errorf("StringValue.Parse: Error on reading length %w", err))
+		return
 	}
 
 	parsedIndex += 2
 	str = str[parsedIndex:length]
 	actualLen := len(str)
+
 	if length != actualLen {
-		err = fmt.Errorf("String %s has %d length but expected %d", str, actualLen, length)
-		return 0, err
+		err = wrapError(
+			fmt.Errorf("StringValue.Parse: String %q has %d length but expected %d",
+				str, actualLen, length))
+		return
 	}
 
-	v.Value = str
+	v.value = str
 	return
 }
 
 type ErrorValue struct {
-	Value string
+	value string
 }
 
 func (v ErrorValue) String() string {
-	return fmt.Sprintf("%c%s%s", RError, v.Value, CRLF)
+	return fmt.Sprintf("%c%q%q", RError, v.value, CRLF)
+}
+
+func (v ErrorValue) Value() interface{} {
+	return v.value
 }
 
 func (v ErrorValue) Bytes() []byte {
@@ -122,30 +154,39 @@ func (v ErrorValue) Bytes() []byte {
 }
 
 func (v *ErrorValue) Parse(data []byte) (parsedIndex int, err error) {
+	wrapError := func(err error) ParseError {
+		return ParseError{data: data, parsedIndex: parsedIndex, err: err}
+	}
+
 	if data[0] != byte(RError) {
-		err = fmt.Errorf("Wrong data type. Missing \"%c\" to parse error", RError)
-		return 0, err
+		err = wrapError(fmt.Errorf("ErrorValue.Parse: Missing \"%c\"", RError))
+		return
 	}
 
 	str := string(data)
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = fmt.Errorf("Wrong data type. Missing \"%s\" to parse error", CRLF)
-		return 0, err
+		err = wrapError(fmt.Errorf("ErrorValue.Parse: Missing \"%q\"", CRLF))
+		return
 	}
 
-	v.Value = str[1:parsedIndex]
+	v.value = str[1:parsedIndex]
+
 	return
 }
 
 type IntValue struct {
-	Value int
+	value int
 }
 
 // Example: ":4\r\n"
 func (v IntValue) String() string {
-	return fmt.Sprintf(":%d%s", v.Value, CRLF)
+	return fmt.Sprintf("%c%d%q", RInt, v.value, CRLF)
+}
+
+func (v IntValue) Value() interface{} {
+	return v.value
 }
 
 func (v IntValue) Bytes() []byte {
@@ -153,41 +194,49 @@ func (v IntValue) Bytes() []byte {
 }
 
 func (v *IntValue) Parse(data []byte) (parsedIndex int, err error) {
+	wrapError := func(err error) ParseError {
+		return ParseError{data: data, parsedIndex: parsedIndex, err: err}
+	}
+
 	if data[0] != byte(RInt) {
-		err = fmt.Errorf("Wrong data type. Missing \"%c\" to parse integer", RInt)
-		return 0, err
+		err = wrapError(fmt.Errorf("IntValue.Parse: Missing \"%c\"", RInt))
+		return
 	}
 
 	str := string(data)
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = fmt.Errorf("Wrong data type. Missing \"%s\" to parse integer", CRLF)
-		return 0, err
+		err = wrapError(fmt.Errorf("IntValue.Parse: Missing \"%q\"", CRLF))
+		return
 	}
 
 	digit, err := strconv.Atoi(str[1:parsedIndex])
 	if err != nil {
-		err = fmt.Errorf("Error on converting int", err.Error())
-		return 0, err
+		err = wrapError(fmt.Errorf("IntValue.Parse: Can't convert to due to %w", err))
+		return
 	}
 
-	v.Value = digit
+	v.value = digit
 	return
 }
 
 type ArrayValue struct {
-	Value []RValue
+	values []RValue
+}
+
+func (v ArrayValue) Value() interface{} {
+	return v.values
 }
 
 // Example: "*2\r\n$4\r\necho\r\n$3\r\nhey\r\n"
 func (v ArrayValue) String() string {
 	var result strings.Builder
 	result.WriteRune(RArray)
-	result.WriteString(strconv.Itoa(len(v.Value)))
+	result.WriteString(strconv.Itoa(len(v.values)))
 	result.WriteString(CRLF)
 
-	for _, item := range v.Value {
+	for _, item := range v.values {
 		result.WriteString(item.String())
 	}
 
@@ -197,7 +246,7 @@ func (v ArrayValue) String() string {
 func (v ArrayValue) Bytes() []byte {
 	var result []byte
 
-	for _, item := range v.Value {
+	for _, item := range v.values {
 		result = append(result, item.Bytes()...)
 	}
 
@@ -207,37 +256,46 @@ func (v ArrayValue) Bytes() []byte {
 // Example:  *2\r\n$4\r\necho\r\n$3\r\nhey\r\n
 // ["echo", "hey"]
 func (v *ArrayValue) Parse(data []byte) (parsedIndex int, err error) {
+	wrapError := func(err error) ParseError {
+		return ParseError{data: data, parsedIndex: parsedIndex, err: err}
+	}
+
 	if data[0] != byte(RArray) {
-		err = fmt.Errorf("Wrong data type. Missing \"%c\" to parse array", RArray)
-		return 0, err
+		err = fmt.Errorf("ArrayValue.Parse: Missing \"%c\"", RArray)
+		return
 	}
 
 	str := string(data)
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = fmt.Errorf("Wrong data type. Missing \"%s\" to parse array size", CRLF)
-		return 0, err
+		err = wrapError(fmt.Errorf("ArrayValue.Parse: Missing \"%q\" to parse array size", CRLF))
+		return
 	}
 
 	size, err := strconv.Atoi(str[1:parsedIndex])
 	if err != nil {
-		err = fmt.Errorf("Error on reading size of an array", err.Error())
-		return 0, err
+		err = wrapError(fmt.Errorf("ArrayValue.Parse: Error on reading size of an array due to %w", err))
+		return
 	}
 
-	v.Value = make([]RValue, size)
+	v.values = make([]RValue, size)
 	parsedIndex += 2
+
+	var count int
 
 	for parsedIndex < len(str) {
 		item := NewRValue(data[parsedIndex])
-		count, err := item.Parse(data[parsedIndex:])
+		count, err = item.Parse(data[parsedIndex:])
+		parsedIndex += count
+
 		if err != nil {
-			return parsedIndex + count, err
+			err = wrapError(err)
+			return
 		}
 
-		v.Value = append(v.Value, item)
-		parsedIndex += count + 2
+		v.values = append(v.values, item)
+		parsedIndex += 2
 	}
 
 	return
