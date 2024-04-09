@@ -15,8 +15,6 @@ func HandleClient(conn net.Conn) {
 			return
 		}
 
-		fmt.Println("Received", data)
-
 		response := handleRequest(data)
 		conn.Write(response.Bytes())
 	}

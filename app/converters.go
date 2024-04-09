@@ -27,7 +27,7 @@ func (v ParseError) Error() string {
 	errorStr.WriteString("[error here]")
 	errorStr.Write(v.data[v.parsedIndex:])
 
-	return fmt.Sprintf("ParseError:\nexpr: %q\nerror: %v", errorStr.String(), v.err)
+	return fmt.Sprintf("ParseError:\nexpr: %s\nerror: %v", errorStr.String(), v.err)
 }
 
 func (e ParseError) Unwrap() error {
@@ -47,7 +47,7 @@ type SimpleStringValue struct {
 
 // Example: "+PONG\r\n"
 func (v SimpleStringValue) String() string {
-	return fmt.Sprintf("%c%q%q", RSimpleString, v.value, CRLF)
+	return fmt.Sprintf("%c%s%s", RSimpleString, v.value, CRLF)
 }
 
 func (v SimpleStringValue) Value() interface{} {
@@ -72,7 +72,7 @@ func (v *SimpleStringValue) Parse(data []byte) (parsedIndex int, err error) {
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = wrapError(fmt.Errorf("SimpleStringValue.Parse: Missing \"%q\"", CRLF))
+		err = wrapError(fmt.Errorf("SimpleStringValue.Parse: Missing \"%s\"", CRLF))
 		return
 	}
 
@@ -87,7 +87,7 @@ type StringValue struct {
 
 // Example: "$4\r\nPONG\r\n"
 func (v StringValue) String() string {
-	return fmt.Sprintf("%c%d%q%q%q", RString, len(v.value), CRLF, v.Value, CRLF)
+	return fmt.Sprintf("%c%d%s%s%s", RString, len(v.value), CRLF, v.value, CRLF)
 }
 
 func (v StringValue) Value() interface{} {
@@ -112,7 +112,7 @@ func (v *StringValue) Parse(data []byte) (parsedIndex int, err error) {
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = wrapError(fmt.Errorf("StringValue.Parse: Missing \"%q\"", CRLF))
+		err = wrapError(fmt.Errorf("StringValue.Parse: Missing \"%s\"", CRLF))
 		return
 	}
 
@@ -128,7 +128,7 @@ func (v *StringValue) Parse(data []byte) (parsedIndex int, err error) {
 
 	if length != actualLen {
 		err = wrapError(
-			fmt.Errorf("StringValue.Parse: String %q has %d length but expected %d",
+			fmt.Errorf("StringValue.Parse: String %s has %d length but expected %d",
 				str, actualLen, length))
 		return
 	}
@@ -142,7 +142,7 @@ type ErrorValue struct {
 }
 
 func (v ErrorValue) String() string {
-	return fmt.Sprintf("%c%q%q", RError, v.value, CRLF)
+	return fmt.Sprintf("%c%s%s", RError, v.value, CRLF)
 }
 
 func (v ErrorValue) Value() interface{} {
@@ -167,7 +167,7 @@ func (v *ErrorValue) Parse(data []byte) (parsedIndex int, err error) {
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = wrapError(fmt.Errorf("ErrorValue.Parse: Missing \"%q\"", CRLF))
+		err = wrapError(fmt.Errorf("ErrorValue.Parse: Missing \"%s\"", CRLF))
 		return
 	}
 
@@ -182,7 +182,7 @@ type IntValue struct {
 
 // Example: ":4\r\n"
 func (v IntValue) String() string {
-	return fmt.Sprintf("%c%d%q", RInt, v.value, CRLF)
+	return fmt.Sprintf("%c%d%s", RInt, v.value, CRLF)
 }
 
 func (v IntValue) Value() interface{} {
@@ -207,7 +207,7 @@ func (v *IntValue) Parse(data []byte) (parsedIndex int, err error) {
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = wrapError(fmt.Errorf("IntValue.Parse: Missing \"%q\"", CRLF))
+		err = wrapError(fmt.Errorf("IntValue.Parse: Missing \"%s\"", CRLF))
 		return
 	}
 
@@ -269,7 +269,7 @@ func (v *ArrayValue) Parse(data []byte) (parsedIndex int, err error) {
 	parsedIndex = strings.Index(str, CRLF)
 
 	if parsedIndex < 0 {
-		err = wrapError(fmt.Errorf("ArrayValue.Parse: Missing \"%q\" to parse array size", CRLF))
+		err = wrapError(fmt.Errorf("ArrayValue.Parse: Missing \"%s\" to parse array size", CRLF))
 		return
 	}
 
