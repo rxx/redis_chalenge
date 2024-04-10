@@ -8,7 +8,6 @@ import (
 	"os"
 	"reflect"
 	"strings"
-	"time"
 )
 
 var store = NewStore()
@@ -57,7 +56,6 @@ func handleRequest(data []byte) (RValue, error) {
 
 	var response RValue
 
-	// TODO create interface Command.Execute() and create different commsnd types to handle own logic
 	switch reflect.TypeOf(request) == reflect.TypeOf(&ArrayValue{}) {
 	case true:
 		response = executeCommand(request)
@@ -78,39 +76,9 @@ func executeCommand(req RValue) RValue {
 	case "echo":
 		return &StringValue{value: commands[1]}
 	case "set":
-		if len(commands) < 3 {
-			return &ErrorValue{value: "Required key and value"}
-		}
-
-		key := commands[1]
-		value := commands[2]
-
-		if len(commands) == 5 && commands[3] == "px" {
-			duration, err := time.ParseDuration(commands[4] + "ms")
-			if err != nil {
-				return &ErrorValue{value: fmt.Errorf("can't parse px duration due to %w", err).Error()}
-			}
-
-			store.Set(key, value, duration)
-			return &SimpleStringValue{value: "OK"}
-		}
-
-		store.Set(key, value, 0)
-		return &SimpleStringValue{value: "OK"}
+		return executeSetCommand(commands[1:])
 	case "get":
-		if len(commands) < 2 {
-			return &ErrorValue{value: "Required key"}
-		}
-
-		key := commands[1]
-
-		value, ok := store.Get(key)
-		if !ok {
-			return &StringValue{value: "nil"}
-		}
-
-		return &StringValue{value: value}
-
+		return executeGetCommand(commands[1:])
 	default:
 		return &ErrorValue{value: fmt.Sprintf("Invalid command %q", cmd)}
 	}
