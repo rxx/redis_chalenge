@@ -123,7 +123,7 @@ func (v *StringValue) Parse(data []byte) (parsedIndex int, err error) {
 	}
 
 	parsedIndex += 2
-	str = str[parsedIndex:length]
+	str = str[parsedIndex : parsedIndex+length]
 	actualLen := len(str)
 
 	if length != actualLen {
@@ -134,7 +134,8 @@ func (v *StringValue) Parse(data []byte) (parsedIndex int, err error) {
 	}
 
 	v.value = str
-	return
+
+	return parsedIndex + length, nil
 }
 
 type ErrorValue struct {
