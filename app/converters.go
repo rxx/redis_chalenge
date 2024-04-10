@@ -227,7 +227,13 @@ type ArrayValue struct {
 }
 
 func (v ArrayValue) Value() interface{} {
-	return v.values
+	var result []string
+
+	for _, item := range v.values {
+		result = append(result, item.Value().(string))
+	}
+
+	return result
 }
 
 // Example: "*2\r\n$4\r\necho\r\n$3\r\nhey\r\n"
@@ -280,12 +286,11 @@ func (v *ArrayValue) Parse(data []byte) (parsedIndex int, err error) {
 		return
 	}
 
-	v.values = make([]RValue, size)
 	parsedIndex += 2
 
 	var count int
 
-	for parsedIndex < len(str) {
+	for parsedIndex < len(str) && size > 0 {
 		item := NewRValue(data[parsedIndex])
 		count, err = item.Parse(data[parsedIndex:])
 		parsedIndex += count
@@ -297,13 +302,14 @@ func (v *ArrayValue) Parse(data []byte) (parsedIndex int, err error) {
 
 		v.values = append(v.values, item)
 		parsedIndex += 2
+		size--
 	}
 
 	return
 }
 
-func NewRValue(rType byte) RValue {
-	switch rType {
+func NewRValue(typeByte byte) RValue {
+	switch typeByte {
 	case RSimpleString:
 		return &SimpleStringValue{}
 	case RError:
@@ -315,6 +321,48 @@ func NewRValue(rType byte) RValue {
 	case RArray:
 		return &ArrayValue{}
 	default:
-		panic("Invalid type")
+		panic("NewRValue: type bite missing")
+	}
+}
+
+func newRValueWithType(typeName string, value interface{}) RValue {
+	switch typeName {
+	case "SimpleString":
+		if value == nil {
+			value = ""
+		}
+
+		return &SimpleStringValue{value: value.(string)}
+	case "Error":
+		if value == nil {
+			value = ""
+		}
+
+		return &ErrorValue{value: value.(string)}
+	case "Int":
+		if value == nil {
+			value = 0
+		}
+
+		return &IntValue{value: value.(int)}
+	case "String":
+		if value == nil {
+			value = ""
+		}
+
+		return &StringValue{value: value.(string)}
+	case "Array":
+		var values []RValue
+		if value == nil {
+			value = []string{}
+		}
+
+		for _, v := range value.([]string) {
+			values = append(values, &StringValue{value: v})
+		}
+
+		return &ArrayValue{values: values}
+	default:
+		panic("newRValueWithType: Invalid type")
 	}
 }
