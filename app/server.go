@@ -12,9 +12,9 @@ func main() {
 	port := flag.String("port", "6379", "Redis port [Default: 6379]")
 	flag.Parse()
 
-	tcp, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%v", port))
+	tcp, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%v", *port))
 	if err != nil {
-		fmt.Printf("Failed to bind to port %v\n", port)
+		fmt.Printf("Failed to bind to port %v\n", *port)
 		os.Exit(1)
 	}
 
