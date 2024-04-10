@@ -67,10 +67,13 @@ func handleRequest(data []byte) (RValue, error) {
 }
 
 func executeCommand(req RValue) RValue {
-	commands := req.Value().([]string)
-	cmd := strings.ToLower(commands[0])
+	var commands []string
 
-	switch cmd {
+	for _, cmd := range req.Value().([]string) {
+		commands = append(commands, strings.ToLower(cmd))
+	}
+
+	switch commands[0] {
 	case "ping":
 		return &SimpleStringValue{value: "PONG"}
 	case "echo":
@@ -79,8 +82,10 @@ func executeCommand(req RValue) RValue {
 		return executeSetCommand(commands[1:])
 	case "get":
 		return executeGetCommand(commands[1:])
+	case "info":
+		return executeInfoCommand(commands[1:])
 	default:
-		return &ErrorValue{value: fmt.Sprintf("Invalid command %q", cmd)}
+		return &ErrorValue{value: fmt.Sprintf("Invalid command %q", commands[0])}
 	}
 }
 

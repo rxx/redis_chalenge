@@ -51,3 +51,12 @@ func executeGetCommand(commands []string) RValue {
 
 	return &StringValue{value: value}
 }
+
+func executeInfoCommand(commands []string) RValue {
+	var value string
+
+	if len(commands) > 0 && commands[0] == "replication" {
+		value = ReplicationInfoToString()
+	}
+	return &StringValue{value: value}
+}
