@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -289,9 +290,15 @@ func (v *ArrayValue) Parse(data []byte) (parsedIndex int, err error) {
 	parsedIndex += 2
 
 	var count int
+	var item RValue
 
 	for parsedIndex < len(str) && size > 0 {
-		item := NewRValue(data[parsedIndex])
+		item, err = NewRValue(data[parsedIndex])
+		if err != nil {
+			err = wrapError(fmt.Errorf("ArrayValue.Parse: Can not parse value due to %w", err))
+			return
+		}
+
 		count, err = item.Parse(data[parsedIndex:])
 		parsedIndex += count
 
@@ -308,20 +315,20 @@ func (v *ArrayValue) Parse(data []byte) (parsedIndex int, err error) {
 	return
 }
 
-func NewRValue(typeByte byte) RValue {
+func NewRValue(typeByte byte) (RValue, error) {
 	switch typeByte {
 	case RSimpleString:
-		return &SimpleStringValue{}
+		return &SimpleStringValue{}, nil
 	case RError:
-		return &ErrorValue{}
+		return &ErrorValue{}, nil
 	case RInt:
-		return &IntValue{}
+		return &IntValue{}, nil
 	case RString:
-		return &StringValue{}
+		return &StringValue{}, nil
 	case RArray:
-		return &ArrayValue{}
+		return &ArrayValue{}, nil
 	default:
-		panic("NewRValue: type bite missing")
+		return nil, errors.New("Type byte missing")
 	}
 }
 

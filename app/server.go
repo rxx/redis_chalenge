@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 )
 
 func main() {
@@ -17,6 +18,8 @@ func main() {
 
 	for {
 		conn, err := tcp.Accept()
+		conn.SetDeadline(time.Now().Add(20 * time.Second))
+
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			return

@@ -3,29 +3,50 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"reflect"
 	"strings"
 )
 
 func HandleClient(conn net.Conn) {
+	defer conn.Close()
+
+	var response RValue
+
 	for {
 		data, err := readData(conn)
 		if err != nil {
-			fmt.Println(err.Error())
+			handleError(conn, err)
 			return
 		}
 
-		response := handleRequest(data)
+		response, err = handleRequest(data)
+		if err != nil {
+			handleError(conn, err)
+			return
+		}
+
 		conn.Write(response.Bytes())
 	}
 }
 
-func handleRequest(data []byte) RValue {
-	request := NewRValue(data[0])
-	_, err := request.Parse(data)
+func handleError(conn net.Conn, err error) {
+	fmt.Fprintln(os.Stderr, err.Error())
+
+	response := &ErrorValue{value: err.Error()}
+
+	conn.Write(response.Bytes())
+}
+
+func handleRequest(data []byte) (RValue, error) {
+	request, err := NewRValue(data[0])
 	if err != nil {
-		fmt.Println(err.Error())
-		return nil
+		return nil, fmt.Errorf("HandleRequest failed due to %w", err)
+	}
+
+	_, err = request.Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("HandleRequest failed due to %w", err)
 	}
 
 	var response RValue
@@ -35,10 +56,10 @@ func handleRequest(data []byte) RValue {
 	case "ArrayValue":
 		response = executeCommand(request)
 	default:
-		response = &ErrorValue{value: "ERR: Commands Array Expected"}
+		response = &ErrorValue{value: "Commands Array Expected"}
 	}
 
-	return response
+	return response, nil
 }
 
 func executeCommand(req RValue) RValue {
@@ -51,7 +72,7 @@ func executeCommand(req RValue) RValue {
 	case "echo":
 		return &StringValue{value: commands[1]}
 	default:
-		return &ErrorValue{value: fmt.Sprintf("Invalid command %s", cmd)}
+		return &ErrorValue{value: fmt.Sprintf("Invalid command %q", cmd)}
 	}
 }
 
@@ -59,8 +80,7 @@ func readData(conn net.Conn) ([]byte, error) {
 	data := make([]byte, 1024)
 	size, err := conn.Read(data)
 	if err != nil {
-		fmt.Println("Error on reading from socket", err.Error())
-		return nil, err
+		return nil, fmt.Errorf("Error on reading from socket due to %w", err)
 	}
 	return data[:size], nil
 }
