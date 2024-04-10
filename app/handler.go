@@ -41,19 +41,19 @@ func handleError(conn net.Conn, err error) {
 func handleRequest(data []byte) (RValue, error) {
 	request, err := NewRValue(data[0])
 	if err != nil {
-		return nil, fmt.Errorf("HandleRequest failed due to %w", err)
+		return nil, err
 	}
 
 	_, err = request.Parse(data)
 	if err != nil {
-		return nil, fmt.Errorf("HandleRequest failed due to %w", err)
+		return nil, err
 	}
 
 	var response RValue
 
 	// TODO create interface Command.Execute() and create different commsnd types to handle own logic
-	switch reflect.TypeOf(request).Name() {
-	case "ArrayValue":
+	switch reflect.TypeOf(request) == reflect.TypeOf(&ArrayValue{}) {
+	case true:
 		response = executeCommand(request)
 	default:
 		response = &ErrorValue{value: "Commands Array Expected"}

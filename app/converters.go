@@ -328,7 +328,7 @@ func NewRValue(typeByte byte) (RValue, error) {
 	case RArray:
 		return &ArrayValue{}, nil
 	default:
-		return nil, errors.New("Type byte missing")
+		return nil, errors.New("type byte missing")
 	}
 }
 

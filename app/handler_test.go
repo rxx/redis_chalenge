@@ -22,15 +22,20 @@ func TestHandleClient(t *testing.T) {
 	}{
 		{
 			request:  "+PING\r\n",
-			response: "+PONG\r\n",
+			response: "-Commands Array Expected\r\n",
 		},
 		{
-			request:  "+echo\r\nhey",
-			response: "+hey\r\n",
+			request:  "*1\r\n$4\r\nping\r\n",
+			response: "+PONG\r\n",
+		},
+
+		{
+			request:  "*2\r\n$4\r\necho\r\n$3\r\nhey\r\n",
+			response: "$3\r\nhey\r\n",
 		},
 		{
 			request:  "FOO",
-			response: "Commands Array Expected",
+			response: "-type byte missing\r\n",
 		},
 	}
 
