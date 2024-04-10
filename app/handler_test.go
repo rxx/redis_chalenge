@@ -33,6 +33,23 @@ func TestHandleClient(t *testing.T) {
 			response: "$3\r\nhey\r\n",
 		},
 		{
+			request:  "*3\r\n$3\r\nset\r\n$3\r\nfoo\r\n$3\r\nbar",
+			response: "+OK\r\n",
+		},
+		{
+			request:  "*2\r\n$3\r\nset\r\n$3\r\nfoo\r\n",
+			response: "-Required key and value\r\n",
+		},
+
+		{
+			request:  "*2\r\n$3\r\nget\r\n$3\r\nfoo\r\n",
+			response: "$3\r\nbar\r\n",
+		},
+		{
+			request:  "*2\r\n$3\r\nget\r\n$7\r\ninvalid\r\n",
+			response: "$-1\r\n",
+		},
+		{
 			request:  "*2\r\n$4\r\necho\r\n$0\r\n\r\n",
 			response: "$0\r\n\r\n",
 		},
