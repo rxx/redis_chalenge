@@ -20,6 +20,20 @@ var replicationInfo = map[string]string{
 	"connected_slaves": "0",
 }
 
+type ReplicaConfig struct {
+	Host string
+	Port string
+}
+
+func (p *ReplicaConfig) String() string {
+	return fmt.Sprintf("%s %s", p.Host, p.Port)
+}
+
+func (p *ReplicaConfig) Set(s string) error {
+	_, err := fmt.Sscanf(s, "%s %s", &p.Host, &p.Port)
+	return err
+}
+
 func ReplicationInfoToString() string {
 	var result strings.Builder
 

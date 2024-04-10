@@ -8,8 +8,12 @@ import (
 	"time"
 )
 
+var replicaOf ReplicaConfig
+
 func main() {
 	port := flag.String("port", "6379", "Redis port [Default: 6379]")
+	flag.Var(&replicaOf, "replicaof", "Redis server to replicate from (host port)")
+
 	flag.Parse()
 
 	tcp, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%v", *port))
