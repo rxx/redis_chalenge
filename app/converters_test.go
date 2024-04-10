@@ -23,6 +23,16 @@ func TestConverters(t *testing.T) {
 			rType:  "String",
 		},
 		{
+			rvalue: "$0\r\n\r\n",
+			value:  "",
+			rType:  "String",
+		},
+		{
+			rvalue: "$-1\r\n",
+			value:  "nil",
+			rType:  "String",
+		},
+		{
 			rvalue: "-Error\r\n",
 			value:  "Error",
 			rType:  "Error",
@@ -32,9 +42,14 @@ func TestConverters(t *testing.T) {
 			value:  40,
 			rType:  "Int",
 		},
+		// {
+		// 	rvalue: "*2\r\n$4\r\necho\r\n$3\r\nhey\r\n",
+		// 	value:  []string{"echo", "hey"},
+		// 	rType:  "Array",
+		// },
 		{
-			rvalue: "*2\r\n$4\r\necho\r\n$3\r\nhey\r\n",
-			value:  []string{"echo", "hey"},
+			rvalue: "*0\r\n",
+			value:  []string{},
 			rType:  "Array",
 		},
 	}
@@ -51,8 +66,18 @@ func TestConverters(t *testing.T) {
 			if _, err := parseItem.Parse(repeatedValue); err != nil {
 				t.Errorf("Parse(): %v", err)
 			}
+			result := parseItem.Value()
 
-			if result := parseItem.Value(); !reflect.DeepEqual(result, tt.value) {
+			var blankArray bool
+			if reflect.TypeOf(tt.value) == reflect.TypeOf([]string{}) && len(tt.value.([]string)) == 0 {
+				blankArray = true
+			}
+
+			if blankArray && len(result.([]string)) > 0 {
+				t.Errorf("Parse() failed: expected blank array, got %v", result)
+			}
+
+			if !reflect.DeepEqual(result, tt.value) && !blankArray {
 				t.Errorf("Parse() failed: expected %v got %v", tt.value, result)
 			}
 		})

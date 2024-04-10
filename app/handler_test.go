@@ -28,10 +28,17 @@ func TestHandleClient(t *testing.T) {
 			request:  "*1\r\n$4\r\nping\r\n",
 			response: "+PONG\r\n",
 		},
-
 		{
 			request:  "*2\r\n$4\r\necho\r\n$3\r\nhey\r\n",
 			response: "$3\r\nhey\r\n",
+		},
+		{
+			request:  "*2\r\n$4\r\necho\r\n$0\r\n\r\n",
+			response: "$0\r\n\r\n",
+		},
+		{
+			request:  "*2\r\n$4\r\necho\r\n$-1\r\n",
+			response: "$-1\r\n",
 		},
 		{
 			request:  "FOO",

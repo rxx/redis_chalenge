@@ -88,6 +88,9 @@ type StringValue struct {
 
 // Example: "$4\r\nPONG\r\n"
 func (v StringValue) String() string {
+	if v.value == "nil" {
+		return fmt.Sprintf("%c%d%s", RString, -1, CRLF)
+	}
 	return fmt.Sprintf("%c%d%s%s%s", RString, len(v.value), CRLF, v.value, CRLF)
 }
 
@@ -123,7 +126,17 @@ func (v *StringValue) Parse(data []byte) (parsedIndex int, err error) {
 		return
 	}
 
+	if length < 0 {
+		v.value = "nil"
+		return
+	}
+
 	parsedIndex += 2
+
+	if length == 0 {
+		return
+	}
+
 	str = str[parsedIndex : parsedIndex+length]
 	actualLen := len(str)
 
@@ -230,6 +243,10 @@ type ArrayValue struct {
 func (v ArrayValue) Value() interface{} {
 	var result []string
 
+	if len(v.values) == 0 {
+		return result
+	}
+
 	for _, item := range v.values {
 		result = append(result, item.Value().(string))
 	}
@@ -244,6 +261,10 @@ func (v ArrayValue) String() string {
 	result.WriteString(strconv.Itoa(len(v.values)))
 	result.WriteString(CRLF)
 
+	if len(v.values) == 0 {
+		return result.String()
+	}
+
 	for _, item := range v.values {
 		result.WriteString(item.String())
 	}
@@ -253,6 +274,10 @@ func (v ArrayValue) String() string {
 
 func (v ArrayValue) Bytes() []byte {
 	var result []byte
+
+	if len(v.values) == 0 {
+		return result
+	}
 
 	for _, item := range v.values {
 		result = append(result, item.Bytes()...)
@@ -284,6 +309,10 @@ func (v *ArrayValue) Parse(data []byte) (parsedIndex int, err error) {
 	size, err := strconv.Atoi(str[1:parsedIndex])
 	if err != nil {
 		err = wrapError(fmt.Errorf("ArrayValue.Parse: Error on reading size of an array due to %w", err))
+		return
+	}
+
+	if size == 0 {
 		return
 	}
 
