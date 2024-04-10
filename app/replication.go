@@ -18,6 +18,9 @@ import (
 func ReplicationInfoToString() string {
 	replicationInfo := map[string]string{
 		"role": nodeConfig.Role,
+		// 40 sized random string
+		"master_replid":      "8371b4fb1155b71f4a04d3e1bc3e18c4a990aeeb",
+		"master_repl_offset": "0",
 	}
 
 	var result strings.Builder
