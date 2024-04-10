@@ -61,7 +61,7 @@ func TestConverters(t *testing.T) {
 			}
 
 			parseItem := newRValueWithType(tt.rType, nil)
-			// NOTE: We repeat value to check if parser will ignore any values over expected length
+			// We repeat value to check if parser will ignore any values over expected length
 			repeatedValue := []byte(strings.Repeat(tt.rvalue, 2))
 			if _, err := parseItem.Parse(repeatedValue); err != nil {
 				t.Errorf("Parse(): %v", err)

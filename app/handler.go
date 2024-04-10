@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var store = NewStore()
@@ -84,8 +85,17 @@ func executeCommand(req RValue) RValue {
 		key := commands[1]
 		value := commands[2]
 
-		store.Set(key, value)
+		if len(commands) == 5 && commands[3] == "px" {
+			duration, err := time.ParseDuration(commands[4] + "ms")
+			if err != nil {
+				return &ErrorValue{value: fmt.Errorf("can't parse px duration due to %w", err).Error()}
+			}
 
+			store.Set(key, value, duration)
+			return &SimpleStringValue{value: "OK"}
+		}
+
+		store.Set(key, value, 0)
 		return &SimpleStringValue{value: "OK"}
 	case "get":
 		if len(commands) < 2 {

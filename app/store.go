@@ -1,27 +1,44 @@
 package main
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
+
+type kvalue struct {
+	value string
+	time  time.Time
+}
 
 type Store struct {
-	data map[string]string
+	data map[string]kvalue
 	mu   sync.RWMutex
 }
 
-func (r *Store) Get(key string) (string, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func (v *Store) Get(key string) (string, bool) {
+	v.mu.RLock()
+	defer v.mu.RUnlock()
 
-	val, ok := r.data[key]
-	return val, ok
+	val, ok := v.data[key]
+
+	if ok && val.time.Before(time.Now()) && !val.time.IsZero() {
+		return "", false
+	}
+
+	return val.value, ok
 }
 
-func (r *Store) Set(key, value string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+func (v *Store) Set(key, value string, expireDuration time.Duration) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
 
-	r.data[key] = value
+	var expiredTime time.Time
+	if expireDuration > 0 {
+		expiredTime = time.Now().Add(expireDuration)
+	}
+	v.data[key] = kvalue{value: value, time: expiredTime}
 }
 
 func NewStore() *Store {
-	return &Store{data: make(map[string]string)}
+	return &Store{data: make(map[string]kvalue)}
 }
