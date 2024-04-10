@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -8,9 +9,12 @@ import (
 )
 
 func main() {
-	tcp, err := net.Listen("tcp", "0.0.0.0:6379")
+	port := flag.String("port", "6379", "Redis port [Default: 6379]")
+	flag.Parse()
+
+	tcp, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%v", port))
 	if err != nil {
-		fmt.Println("Failed to bind to port 6379")
+		fmt.Printf("Failed to bind to port %v\n", port)
 		os.Exit(1)
 	}
 
