@@ -15,26 +15,11 @@ import (
 // repl_backlog_first_byte_offset:0
 // repl_backlog_histlen:
 
-var replicationInfo = map[string]string{
-	"role":             "master",
-	"connected_slaves": "0",
-}
-
-type ReplicaConfig struct {
-	Host string
-	Port string
-}
-
-func (p *ReplicaConfig) String() string {
-	return fmt.Sprintf("%s %s", p.Host, p.Port)
-}
-
-func (p *ReplicaConfig) Set(s string) error {
-	_, err := fmt.Sscanf(s, "%s %s", &p.Host, &p.Port)
-	return err
-}
-
 func ReplicationInfoToString() string {
+	replicationInfo := map[string]string{
+		"role": nodeConfig.Role,
+	}
+
 	var result strings.Builder
 
 	for key, value := range replicationInfo {

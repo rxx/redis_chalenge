@@ -8,17 +8,31 @@ import (
 	"time"
 )
 
-var replicaOf ReplicaConfig
+type NodeConfig struct {
+	Port string
+	Role string
+}
+
+var nodeConfig *NodeConfig
 
 func main() {
 	port := flag.String("port", "6379", "Redis port [Default: 6379]")
-	flag.Var(&replicaOf, "replicaof", "Redis server to replicate from (host port)")
-
+	replicaof := flag.String("replicaof", "", "")
 	flag.Parse()
 
-	tcp, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%v", *port))
+	nodeConfig = &NodeConfig{Port: *port}
+	role := "master"
+	if len(*replicaof) > 0 {
+		role = "slave"
+	}
+
+	nodeConfig.Role = role
+
+	fmt.Printf("NodeConfig %v", nodeConfig)
+
+	tcp, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", nodeConfig.Port))
 	if err != nil {
-		fmt.Printf("Failed to bind to port %v\n", *port)
+		fmt.Printf("Failed to bind to port %s\n", nodeConfig.Port)
 		os.Exit(1)
 	}
 
