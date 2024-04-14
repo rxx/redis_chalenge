@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"strings"
 )
 
@@ -31,4 +32,56 @@ func ReplicationInfoToString() string {
 	}
 
 	return result.String()
+}
+
+func StartReplica() {
+	fmt.Printf("StartReplica: MasterConfig %s\n", nodeConfig.MasterConfig)
+	if nodeConfig.MasterConfig == nil {
+		return
+	}
+
+	SendMessageToMaster("PING")
+}
+
+// Try 5 times to send message
+func SendMessageToMaster(msg string) {
+	fmt.Printf("Send message to master: %s\n", msg)
+
+	for repeat := 5; repeat > 0; repeat-- {
+		if err := writeMessage("PING"); err != nil {
+			fmt.Printf("Failed to connect to master node due to %v", err)
+			continue
+		}
+
+		return
+	}
+}
+
+func writeMessage(msg string) error {
+	masterAddr := fmt.Sprintf("%s:%s", nodeConfig.MasterConfig.Host, nodeConfig.MasterConfig.Port)
+
+	fmt.Printf("masterAddr: %s\n", masterAddr)
+
+	tcp, err := net.Dial("tcp", masterAddr)
+	if err != nil {
+		return fmt.Errorf("WriteMessage: %w", err)
+	}
+
+	defer tcp.Close()
+	// tcp.SetDeadline(time.Now().Add(5 * time.Second))
+
+	_, err = tcp.Write(buildCommand(msg))
+	if err != nil {
+		return fmt.Errorf("WriteMessage: %w", err)
+	}
+
+	return nil
+}
+
+func buildCommand(cmd string) []byte {
+	rCmd := &StringValue{value: cmd}
+	rValue := &ArrayValue{}
+	rValue.values = append(rValue.values, rCmd)
+
+	return rValue.Bytes()
 }

@@ -24,6 +24,8 @@ func HandleClient(conn net.Conn) {
 			return
 		}
 
+		fmt.Printf("Message received: %s", string(data))
+
 		response, err = handleRequest(data)
 		if err != nil {
 			handleError(conn, err)
@@ -75,6 +77,7 @@ func executeCommand(req RValue) RValue {
 
 	switch commands[0] {
 	case "ping":
+		fmt.Println("PING message received from client")
 		return &SimpleStringValue{value: "PONG"}
 	case "echo":
 		return &StringValue{value: commands[1]}
